@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Speech Recording</title>
+</head>
+<body>
+    <audio controls autoplay></audio>
+    <script type="text/javascript" src="recorder.js"> </script>
+                <fieldset><legend>RECORD AUDIO</legend>
+    <input onclick="startRecording()" type="button" value="start recording" />
+    <input onclick="stopRecording()" type="button" value="stop recording and play" />
+                </fieldset>
+    <script>
+      var onFail = function(e) {
+        console.log('Rejected!', e);
+      };
+
+      var onSuccess = function(s) {
+        var context = new AudioContext();
+        var mediaStreamSource = context.createMediaStreamSource(s);
+        recorder = new Recorder(mediaStreamSource);
+        window.rrr.start()
+        recorder.record();
+
+        // audio loopback
+        // mediaStreamSource.connect(context.destination);
+      }
+
+      window.URL = window.URL || window.webkitURL;
+      navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+      var recorder;
+      var audio = document.querySelector('audio');
+
+      function startRecording() {
+        if (navigator.getUserMedia) {
+          navigator.getUserMedia({audio: true}, onSuccess, onFail);
+        } else {
+          console.log('navigator.getUserMedia not present');
+        }
+      }
+
+      function stopRecording() {
+        window.rrr.stop()
+        recorder.stop();
+        recorder.exportWAV(function(s) {
+                            
+                               audio.src = window.URL.createObjectURL(s);
+        });
+      }
+    window.SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+    let finalTranscript = '';
+    let recognition = new window.SpeechRecognition();
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 10;
+    recognition.continuous = true;
+
+    recognition.onresult = (event) => {
+      console.log(event)
+      let interimTranscript = '';
+      for (let i = event.resultIndex, len = event.results.length; i < len; i++) {
+        let transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      document.getElementById('voice').innerHTML = finalTranscript + '<i style="color:#ddd;">' + interimTranscript + '</>';
+    }
+
+    recognition.onaudioend = (a,b) => {console.log(a,b)}
+    recognition.onend= (a,b) => {console.log(a,b)}
+    recognition.onsoundend = (a,b) => {console.log(a,b)}
+    window.rrr = recognition 
+    recognition.lang = 'en'
+    
+    //recognition.start();
+    let a = 0
+    function startStop() {
+      if (!a) {
+        window.rrr.start()
+        a = 1;
+      } else {
+        window.rrr.stop()
+        a = 0;
+      }
+    }
+  </script>
+  <div>Choose lang: 
+    <span onclick="window.rrr.lang='en'">EN</span>
+    <span onclick="window.rrr.lang='ru'">RU</span>
+  </div>
+  <div id="start" onclick="startStop()"> Start / Stop </div>
+  <hr />
+  <ul>
+    <li>Good morning/afternoon. This is Dmitrii Zuev from HP. Mr/Mrs Giovanni Caruso from what I see here, you are in charge for purchasing and managing the office computing equipment at TELECONTROLLI SRL, is that correct?</li>
+    <li>Great! Thanks for that, thats all clear from my side. Let´s take a moment to talk a little more about your business & what HP can do to help.</li>
+    <li>Great! I’m calling today to let you know about the advantages of some of the newest HP computing solutions powered by Intel. Are you aware of the latest HP laptops and desktops with Intel technology?</li>
+    <li>Okay, good! So you´ve probably heard about the importance that HP places on Design, Security and Collaboration within its computing solutions for businesses. I can share with you some information about our latest products. But before that, to make sure that our records are up to date, I´d like to quickly ask you some questions about your company.</li>
+  </ul>
+  <hr />
+  http://www.smartjava.org/content/record-audio-using-webrtc-chrome-and-speech-recognition-websockets/
+
+  <div id="voice"></div>
+</body>
+</html>
